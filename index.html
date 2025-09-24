@@ -5,214 +5,132 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Newborn HR/RR Practice</title>
   <style>
-    :root {
-      --bg: #f7f7fb;
-      --card: #ffffff;
-      --text: #111827;
-      --muted: #6b7280;
-      --primary: #2563eb;
-      --primary-700: #1d4ed8;
-      --success: #059669;
-      --danger: #b91c1c;
-      --ring: rgba(37, 99, 235, 0.35);
-      --border: #e5e7eb;
-    }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; background: var(--bg); color: var(--text); }
+    body { font-family: system-ui, sans-serif; background: #f7f7fb; color: #111827; margin: 0; }
     .container { max-width: 900px; margin: 0 auto; padding: 24px; }
-    header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+    header { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
     h1 { font-size: 1.4rem; margin: 0; }
-    .row { display: flex; gap: 10px; align-items: center; }
-    button { border: 0; background: var(--primary); color: #fff; padding: 10px 14px; border-radius: 14px; cursor: pointer; transition: 120ms ease; box-shadow: 0 1px 0 rgba(0,0,0,0.05); }
-    button:hover { background: var(--primary-700); }
-    button.secondary { background: #e5e7eb; color: #111; }
+    button { border: 0; padding: 10px 14px; border-radius: 12px; cursor: pointer; }
+    button.primary { background: #2563eb; color: #fff; }
+    button.primary:hover { background: #1d4ed8; }
+    button.secondary { background: #e5e7eb; }
     button.secondary:hover { background: #d1d5db; }
-    .status { margin: 8px 0 16px; font-size: 0.9rem; color: #92400e; background: #fffbeb; border: 1px solid #fef3c7; padding: 8px 10px; border-radius: 10px; display: none; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 12px; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; box-shadow: 0 1px 0 rgba(0,0,0,.02); }
-    label { display: block; font-size: 0.95rem; margin-bottom: 8px; }
-    .input-line { display: flex; align-items: center; gap: 10px; }
-    input[type="text"], input[type="number"] { width: 120px; padding: 10px 12px; border-radius: 12px; border: 1px solid #d1d5db; outline: none; font-size: 1rem; }
-    input:focus { box-shadow: 0 0 0 4px var(--ring); border-color: var(--primary); }
-    .actual { font-size: 0.9rem; color: var(--muted); }
-    .badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 999px; margin-left: 6px; display: inline-block; }
-    .ok { background: #d1fae5; color: var(--success); }
-    .no { background: #fee2e2; color: var(--danger); }
-    .actions { margin-top: 16px; display: flex; gap: 10px; align-items: center; }
-    details { margin-top: 18px; color: var(--muted); }
-    summary { cursor: pointer; }
-    /* Hide the native audio controls/filename */
+    .status { margin: 10px 0; padding: 8px 10px; border-radius: 8px; font-size: 0.9rem; display: none; background: #fffbeb; border: 1px solid #fef3c7; color: #92400e; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+    .card { background: #fff; padding: 16px; border-radius: 12px; border: 1px solid #e5e7eb; }
+    input { width: 120px; padding: 8px 10px; border-radius: 10px; border: 1px solid #d1d5db; font-size: 1rem; }
+    .badge { font-size: 0.75rem; padding: 2px 6px; border-radius: 999px; margin-left: 6px; }
+    .ok { background: #d1fae5; color: #065f46; }
+    .no { background: #fee2e2; color: #991b1b; }
     audio { display: none; }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>Newborn Heart &amp; Respiratory Rate Practice</h1>
-      <div class="row">
-        <button id="new-sound">New sound</button>
-        <button id="play-pause" class="secondary" aria-pressed="false" title="Play/Pause">▶/⏸</button>
+      <h1>Newborn HR/RR Practice</h1>
+      <div>
+        <button id="new-sound" class="primary">New sound</button>
+        <button id="play-pause" class="secondary">▶/⏸</button>
       </div>
     </header>
 
-    <div id="status" class="status" role="status" aria-live="polite"></div>
-
+    <div id="status" class="status"></div>
     <audio id="audio" preload="auto"></audio>
 
     <div class="grid">
       <div class="card">
-        <label for="hr">Heart rate (beats/min)</label>
-        <div class="input-line">
-          <input id="hr" inputmode="numeric" pattern="[0-9]*" placeholder="e.g., 140" />
-          <div id="hr-actual" class="actual" aria-live="polite"></div>
-        </div>
+        <label for="hr">Heart rate (beats/min)</label><br/>
+        <input id="hr" placeholder="e.g., 140">
+        <div id="hr-actual"></div>
       </div>
-
       <div class="card">
-        <label for="rr">Respiratory rate (breaths/min)</label>
-        <div class="input-line">
-          <input id="rr" inputmode="numeric" pattern="[0-9]*" placeholder="e.g., 44" />
-          <div id="rr-actual" class="actual" aria-live="polite"></div>
-        </div>
+        <label for="rr">Respiratory rate (breaths/min)</label><br/>
+        <input id="rr" placeholder="e.g., 44">
+        <div id="rr-actual"></div>
       </div>
     </div>
 
-    <div class="actions">
-      <button id="check" title="Reveal actual values and correctness">Check</button>
-      <button id="clear" class="secondary" title="Clear inputs and feedback">Clear inputs</button>
+    <div style="margin-top:16px;">
+      <button id="check" class="primary">Check</button>
+      <button id="clear" class="secondary">Clear</button>
     </div>
-
-    <details>
-      <summary>Help &amp; notes</summary>
-      <ul>
-        <li>Click <strong>New sound</strong> for a random clip. It loops automatically.</li>
-        <li>If audio doesn’t start, click <strong>▶/⏸</strong> (browsers often block autoplay until a user gesture).</li>
-        <li>Type your counts, then press <strong>Check</strong> to reveal the actual HR/RR next to each box.</li>
-        <li>Exact match is required to mark as correct (no tolerance right now).</li>
-      </ul>
-    </details>
+    
   </div>
 
-  <script>
-    // Put these MP3 files in the SAME DIRECTORY as index.html
-    const FILES = [
-      "Breath(38)Heart(126).mp3",
-      "Breath(40)Heart(120).mp3",
-      "Breath(42)Heart(144).mp3",
-      "Breath(46)Heart(130).mp3",
-      "Breath(48)Heart(138).mp3",
-      "Breath(50)Heart(144).mp3",
-      "Breath(52)Heart(146).mp3",
-      "Breath(52)Heart(150).mp3",
-    ];
+<script>
+const FILES = [
+  "Breath(38)Heart(126).mp3",
+  "Breath(40)Heart(120).mp3",
+  "Breath(42)Heart(144).mp3",
+  "Breath(46)Heart(130).mp3",
+  "Breath(48)Heart(138).mp3",
+  "Breath(50)Heart(144).mp3",
+  "Breath(52)Heart(146).mp3",
+  "Breath(52)Heart(150).mp3",
+];
 
-    const audioEl = document.getElementById('audio');
-    const btnNew = document.getElementById('new-sound');
-    const btnPlayPause = document.getElementById('play-pause');
-    const btnCheck = document.getElementById('check');
-    const btnClear = document.getElementById('clear');
-    const statusBox = document.getElementById('status');
+const audioEl = document.getElementById('audio');
+const statusBox = document.getElementById('status');
+let currentFile = null;
+let truth = {hr:null, rr:null};
 
-    const inputHR = document.getElementById('hr');
-    const inputRR = document.getElementById('rr');
-    const hrActual = document.getElementById('hr-actual');
-    const rrActual = document.getElementById('rr-actual');
+function parseRates(filename) {
+  const m = filename.match(/Breath\((\d+)\)Heart\((\d+)\)\.mp3$/i);
+  if (!m) return { rr: null, hr: null };
+  return { rr: parseInt(m[1],10), hr: parseInt(m[2],10) };
+}
 
-    let currentFile = null;
-    let truth = { hr: null, rr: null };
+function setStatus(msg) {
+  if (!msg) { statusBox.style.display = 'none'; return; }
+  statusBox.style.display = 'block'; statusBox.textContent = msg;
+}
 
-    // numeric-only
-    function digitsOnly(e) {
-      const v = e.target.value.replace(/[^0-9]/g, '');
-      if (v !== e.target.value) e.target.value = v;
-    }
-    inputHR.addEventListener('input', digitsOnly);
-    inputRR.addEventListener('input', digitsOnly);
+async function loadAndPlay(file) {
+  currentFile = file;
+  truth = parseRates(file);
+  document.getElementById('hr').value = '';
+  document.getElementById('rr').value = '';
+  document.getElementById('hr-actual').textContent = '';
+  document.getElementById('rr-actual').textContent = '';
+  audioEl.loop = true; audioEl.src = file;
+  try { await audioEl.play(); setStatus(''); } 
+  catch { setStatus('Audio ready. Click ▶/⏸ to start.'); }
+}
 
-    function parseRates(filename) {
-      const m = filename.match(/Breath\((\d+)\)Heart\((\d+)\)\.mp3$/i);
-      if (!m) return { rr: null, hr: null };
-      return { rr: parseInt(m[1], 10), hr: parseInt(m[2], 10) };
-    }
+document.getElementById('new-sound').onclick = () => {
+  const next = FILES[Math.floor(Math.random()*FILES.length)];
+  loadAndPlay(next);
+};
 
-    function pickRandomFile(exclude) {
-      if (FILES.length === 0) return null;
-      if (FILES.length === 1) return FILES[0];
-      let f;
-      do { f = FILES[Math.floor(Math.random() * FILES.length)]; } while (f === exclude);
-      return f;
-    }
+document.getElementById('play-pause').onclick = () => {
+  if (!audioEl.src) return;
+  if (audioEl.paused) audioEl.play(); else audioEl.pause();
+};
 
-    function setStatus(msg) {
-      if (!msg) { statusBox.style.display = 'none'; statusBox.textContent = ''; return; }
-      statusBox.textContent = msg;
-      statusBox.style.display = 'block';
-    }
+document.getElementById('check').onclick = () => {
+  if (!currentFile) { setStatus('Click “New sound” first.'); return; }
+  const hrVal = parseInt(document.getElementById('hr').value,10);
+  const rrVal = parseInt(document.getElementById('rr').value,10);
 
-    async function loadAndPlay(file) {
-      currentFile = file;
-      truth = parseRates(file);
-      hrActual.textContent = '';
-      rrActual.textContent = '';
-      inputHR.value = '';
-      inputRR.value = '';
+  const hrOK = Number.isFinite(hrVal) && Math.abs(hrVal - truth.hr) <= 10;
+  const rrOK = Number.isFinite(rrVal) && Math.abs(rrVal - truth.rr) <= 5;
 
-      audioEl.loop = true;
-      audioEl.src = file;
-      try {
-        await audioEl.play();
-        setStatus('');
-        btnPlayPause.setAttribute('aria-pressed', 'true');
-      } catch (e) {
-        setStatus('Audio is ready. Click ▶/⏸ to start (autoplay was blocked).');
-        btnPlayPause.setAttribute('aria-pressed', 'false');
-      }
-    }
+  document.getElementById('hr-actual').innerHTML =
+    `Actual: <strong>${truth.hr}</strong> ` +
+    (hrOK ? '<span class="badge ok">Correct (±10)</span>' :
+             '<span class="badge no">Check count</span>');
+  document.getElementById('rr-actual').innerHTML =
+    `Actual: <strong>${truth.rr}</strong> ` +
+    (rrOK ? '<span class="badge ok">Correct (±5)</span>' :
+             '<span class="badge no">Check count</span>');
+};
 
-    btnNew.addEventListener('click', () => {
-      const next = pickRandomFile(currentFile);
-      if (!next) return;
-      loadAndPlay(next);
-    });
-
-    btnPlayPause.addEventListener('click', async () => {
-      if (!audioEl.src) {
-        const next = pickRandomFile(null);
-        if (!next) return;
-        await loadAndPlay(next);
-        return;
-      }
-      if (audioEl.paused) {
-        try { await audioEl.play(); setStatus(''); btnPlayPause.setAttribute('aria-pressed', 'true'); }
-        catch { setStatus('Click ▶/⏸ again if needed.'); }
-      } else {
-        audioEl.pause();
-        btnPlayPause.setAttribute('aria-pressed', 'false');
-      }
-    });
-
-    btnCheck.addEventListener('click', () => {
-      if (!currentFile) { setStatus('Click “New sound” first.'); return; }
-      const hrVal = parseInt(inputHR.value, 10);
-      const rrVal = parseInt(inputRR.value, 10);
-
-      hrActual.innerHTML = `Actual: <strong>${truth.hr ?? '—'}</strong>` +
-        (Number.isFinite(hrVal) && hrVal === truth.hr
-          ? ' <span class="badge ok">Correct</span>'
-          : ' <span class="badge no">Check count</span>');
-
-      rrActual.innerHTML = `Actual: <strong>${truth.rr ?? '—'}</strong>` +
-        (Number.isFinite(rrVal) && rrVal === truth.rr
-          ? ' <span class="badge ok">Correct</span>'
-          : ' <span class="badge no">Check count</span>');
-    });
-
-    btnClear.addEventListener('click', () => {
-      inputHR.value = '';
-      inputRR.value = '';
-      hrActual.textContent = '';
-      rrActual.textContent = '';
-    });
-  </script>
+document.getElementById('clear').onclick = () => {
+  document.getElementById('hr').value = '';
+  document.getElementById('rr').value = '';
+  document.getElementById('hr-actual').textContent = '';
+  document.getElementById('rr-actual').textContent = '';
+};
+</script>
 </body>
 </html>
