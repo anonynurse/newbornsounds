@@ -17,6 +17,7 @@
     .status { margin: 10px 0; padding: 8px 10px; border-radius: 8px; font-size: 0.9rem; display: none; background: #fffbeb; border: 1px solid #fef3c7; color: #92400e; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
     .card { background: #fff; padding: 16px; border-radius: 12px; border: 1px solid #e5e7eb; }
+    .input-line { display: flex; align-items: center; gap: 10px; }
     input { width: 120px; padding: 8px 10px; border-radius: 10px; border: 1px solid #d1d5db; font-size: 1rem; }
     .badge { font-size: 0.75rem; padding: 2px 6px; border-radius: 999px; margin-left: 6px; }
     .ok { background: #d1fae5; color: #065f46; }
@@ -39,22 +40,25 @@
 
     <div class="grid">
       <div class="card">
-        <label for="hr">Heart rate (beats/min)</label><br/>
-        <input id="hr" placeholder="e.g., 140">
-        <div id="hr-actual"></div>
+        <label for="hr">Heart rate (beats/min)</label>
+        <div class="input-line">
+          <input id="hr">
+          <div id="hr-actual"></div>
+        </div>
       </div>
       <div class="card">
-        <label for="rr">Respiratory rate (breaths/min)</label><br/>
-        <input id="rr" placeholder="e.g., 44">
-        <div id="rr-actual"></div>
+        <label for="rr">Respiratory rate (breaths/min)</label>
+        <div class="input-line">
+          <input id="rr">
+          <div id="rr-actual"></div>
+        </div>
       </div>
     </div>
 
     <div style="margin-top:16px;">
       <button id="check" class="primary">Check</button>
-      <button id="clear" class="secondary">Clear</button>
+      <button id="clear" class="secondary">Clear inputs</button>
     </div>
-    
   </div>
 
 <script>
@@ -116,11 +120,11 @@ document.getElementById('check').onclick = () => {
   const rrOK = Number.isFinite(rrVal) && Math.abs(rrVal - truth.rr) <= 5;
 
   document.getElementById('hr-actual').innerHTML =
-    `Actual: <strong>${truth.hr}</strong> ` +
+    `<span>Actual: <strong>${truth.hr}</strong></span>` +
     (hrOK ? '<span class="badge ok">Correct (±10)</span>' :
              '<span class="badge no">Check count</span>');
   document.getElementById('rr-actual').innerHTML =
-    `Actual: <strong>${truth.rr}</strong> ` +
+    `<span>Actual: <strong>${truth.rr}</strong></span>` +
     (rrOK ? '<span class="badge ok">Correct (±5)</span>' :
              '<span class="badge no">Check count</span>');
 };
