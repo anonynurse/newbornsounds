@@ -23,9 +23,19 @@
     .ok { background: #d1fae5; color: #065f46; }
     .no { background: #fee2e2; color: #991b1b; }
     audio { display: none; }
+
+    /* Confetti canvas overlay */
+    #confetti {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+    }
   </style>
 </head>
 <body>
+  <canvas id="confetti"></canvas>
+
   <div class="container">
     <header>
       <h1>Newborn HR/RR Practice</h1>
@@ -62,6 +72,7 @@
   </div>
 
 <script>
+/* ------ App logic ------ */
 const FILES = [
   "Breath(38)Heart(126).mp3",
   "Breath(40)Heart(120).mp3",
@@ -97,7 +108,7 @@ async function loadAndPlay(file) {
   document.getElementById('hr-actual').textContent = '';
   document.getElementById('rr-actual').textContent = '';
   audioEl.loop = true; audioEl.src = file;
-  try { await audioEl.play(); setStatus(''); } 
+  try { await audioEl.play(); setStatus(''); }
   catch { setStatus('Audio ready. Click ▶/⏸ to start.'); }
 }
 
@@ -119,14 +130,21 @@ document.getElementById('check').onclick = () => {
   const hrOK = Number.isFinite(hrVal) && Math.abs(hrVal - truth.hr) <= 10;
   const rrOK = Number.isFinite(rrVal) && Math.abs(rrVal - truth.rr) <= 5;
 
+  const hrExact = Number.isFinite(hrVal) && hrVal === truth.hr;
+  const rrExact = Number.isFinite(rrVal) && rrVal === truth.rr;
+
   document.getElementById('hr-actual').innerHTML =
     `<span>Actual: <strong>${truth.hr}</strong></span>` +
     (hrOK ? '<span class="badge ok">Correct (±10)</span>' :
              '<span class="badge no">Check count</span>');
+
   document.getElementById('rr-actual').innerHTML =
     `<span>Actual: <strong>${truth.rr}</strong></span>` +
     (rrOK ? '<span class="badge ok">Correct (±5)</span>' :
              '<span class="badge no">Check count</span>');
+
+  // Confetti one is exactly right
+  if (hrExact || rrExact) fireConfetti();
 };
 
 document.getElementById('clear').onclick = () => {
@@ -135,6 +153,76 @@ document.getElementById('clear').onclick = () => {
   document.getElementById('hr-actual').textContent = '';
   document.getElementById('rr-actual').textContent = '';
 };
+
+/* ------ Tiny confetti engine (no dependencies) ------ */
+const canvas = document.getElementById('confetti');
+const ctx = canvas.getContext('2d');
+let W = 0, H = 0;
+function resizeCanvas() {
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+function fireConfetti() {
+  const particles = [];
+  const colors = ['#ef4444','#f59e0b','#10b981','#3b82f6','#a855f7','#ec4899'];
+  const N = 220; // number of pieces
+  const now = performance.now();
+  const duration = 1500; // ms
+  const gravity = 0.0015 * H; // scale to viewport
+
+  // spawn from near top-center
+  for (let i = 0; i < N; i++) {
+    const angle = (Math.random() * Math.PI) - (Math.PI / 2); // left to right
+    const speed = (0.35 + Math.random() * 0.65) * (W / 3);   // px/s
+    particles.push({
+      x: W / 2, y: H * 0.25,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      size: 4 + Math.random() * 4,
+      rot: Math.random() * Math.PI * 2,
+      vr: (Math.random() - 0.5) * 0.3,
+      color: colors[Math.floor(Math.random() * colors.length)]
+    });
+  }
+
+  let running = true;
+  function tick(t) {
+    const dt = (t - (tick.prev || t)) / 1000; // seconds
+    tick.prev = t;
+
+    // clear
+    ctx.clearRect(0, 0, W, H);
+
+    // draw/update
+    particles.forEach(p => {
+      p.vy += gravity * dt;
+      p.x  += p.vx * dt;
+      p.y  += p.vy * dt;
+      p.rot += p.vr;
+
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size * 0.6);
+      ctx.restore();
+    });
+
+    // stop when time’s up and most are off-screen
+    if (t - now > duration) running = false;
+
+    if (running) {
+      requestAnimationFrame(tick);
+    } else {
+      // fade out quickly
+      setTimeout(() => ctx.clearRect(0, 0, W, H), 120);
+    }
+  }
+  requestAnimationFrame(tick);
+}
 </script>
 </body>
 </html>
