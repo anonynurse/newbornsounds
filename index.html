@@ -130,7 +130,7 @@
     inputRR.addEventListener('input', digitsOnly);
 
     function parseRates(filename) {
-      const m = filename.match(/Breath\\((\\d+)\\)Heart\\((\\d+)\\)\\.mp3$/i);
+      const m = filename.match(/Breath\((\d+)\)Heart\((\d+)\)\.mp3$/i);
       if (!m) return { rr: null, hr: null };
       return { rr: parseInt(m[1], 10), hr: parseInt(m[2], 10) };
     }
