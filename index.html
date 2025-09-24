@@ -1,0 +1,227 @@
+import React, { useMemo, useRef, useState } from "react";
+
+/**
+ * Newborn HR/RR Practice
+ * ------------------------------------------------------
+ * How to use:
+ * 1) Create a folder `public/sounds/` in your project and place these files in it:
+ *    - Breath(38)Heart(126).mp3
+ *    - Breath(40)Heart(120).mp3
+ *    - Breath(42)Heart(144).mp3
+ *    - Breath(46)Heart(130).mp3
+ *    - Breath(48)Heart(138).mp3
+ *    - Breath(50)Heart(144).mp3
+ *    - Breath(52)Heart(146).mp3
+ *    - Breath(52)Heart(150).mp3
+ * 2) Drop this component into a React app (Vite/Next/CRA). It expects Tailwind but also works plain.
+ * 3) Click "New sound" to randomly load and loop one clip. The filename is never shown.
+ * 4) Count HR/RR, type your answers, then click "Check" to reveal the ground truth beside each input.
+ */
+
+const FILES = [
+  "Breath(38)Heart(126).mp3",
+  "Breath(40)Heart(120).mp3",
+  "Breath(42)Heart(144).mp3",
+  "Breath(46)Heart(130).mp3",
+  "Breath(48)Heart(138).mp3",
+  "Breath(50)Heart(144).mp3",
+  "Breath(52)Heart(146).mp3",
+  "Breath(52)Heart(150).mp3",
+];
+
+function parseRates(filename) {
+  // Expect e.g., "Breath(38)Heart(126).mp3"
+  const m = filename.match(/Breath\((\d+)\)Heart\((\d+)\)\.mp3$/i);
+  if (!m) return { rr: null, hr: null };
+  const rr = parseInt(m[1], 10);
+  const hr = parseInt(m[2], 10);
+  return { rr, hr };
+}
+
+export default function NewbornHRRRPractice() {
+  const audioRef = useRef(null);
+  const [currentFile, setCurrentFile] = useState(null); // string
+  const [truth, setTruth] = useState({ rr: null, hr: null });
+  const [userHR, setUserHR] = useState("");
+  const [userRR, setUserRR] = useState("");
+  const [checked, setChecked] = useState(false);
+  const [statusMsg, setStatusMsg] = useState("");
+
+  const src = useMemo(() => (currentFile ? `/sounds/${currentFile}` : null), [currentFile]);
+
+  const handleNewSound = async () => {
+    // pick a new random file
+    const fname = FILES[Math.floor(Math.random() * FILES.length)];
+    const { rr, hr } = parseRates(fname);
+    setCurrentFile(fname);
+    setTruth({ rr, hr });
+    setChecked(false);
+    setUserHR("");
+    setUserRR("");
+    setStatusMsg("");
+
+    // After state updates flush, try to play
+    setTimeout(async () => {
+      const el = audioRef.current;
+      if (el) {
+        try {
+          el.currentTime = 0;
+          el.loop = true;
+          await el.play();
+        } catch (e) {
+          setStatusMsg("Tap the ▶ Play button to start audio.");
+        }
+      }
+    }, 0);
+  };
+
+  const handleCheck = () => {
+    if (!currentFile) {
+      setStatusMsg("Click ‘New sound’ first.");
+      return;
+    }
+    setChecked(true);
+  };
+
+  const equals = (a, b) => {
+    if (a === "" || a === null || a === undefined) return false;
+    const ai = parseInt(a, 10);
+    return Number.isFinite(ai) && ai === b;
+  };
+
+  const hrCorrect = checked && equals(userHR, truth.hr);
+  const rrCorrect = checked && equals(userRR, truth.rr);
+
+  return (
+    <div className="min-h-screen bg-gray-50 text-gray-900">
+      <div className="max-w-3xl mx-auto p-6">
+        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <h1 className="text-2xl font-semibold">Newborn Heart & Respiratory Rate Practice</h1>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleNewSound}
+              className="px-4 py-2 rounded-2xl bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+            >
+              New sound
+            </button>
+            {/* Simple custom controls: we keep native controls hidden to avoid filename exposure */}
+            <button
+              onClick={() => {
+                const el = audioRef.current;
+                if (!el) return;
+                if (el.paused) {
+                  el.play().catch(() => setStatusMsg("Autoplay blocked. Click Play again."));
+                } else {
+                  el.pause();
+                }
+              }}
+              className="px-3 py-2 rounded-2xl bg-gray-200 hover:bg-gray-300"
+            >
+              ▶/⏸
+            </button>
+          </div>
+        </header>
+
+        {statusMsg && (
+          <div className="mb-4 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+            {statusMsg}
+          </div>
+        )}
+
+        {/* Hidden audio element (no controls -> filename never shown) */}
+        <audio ref={audioRef} src={src ?? undefined} preload="auto" />
+
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* HEART RATE */}
+          <div className="p-5 bg-white rounded-2xl shadow-sm border border-gray-100">
+            <label htmlFor="hr" className="block text-sm font-medium mb-2">
+              Heart rate (beats/min)
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                id="hr"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="e.g., 140"
+                value={userHR}
+                onChange={(e) => setUserHR(e.target.value.replace(/[^0-9]/g, ""))}
+                className="w-40 px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {checked && (
+                <div className="text-sm">
+                  <span className="text-gray-500">Actual:</span>{" "}
+                  <span className="font-semibold">{truth.hr ?? "—"}</span>{" "}
+                  {hrCorrect ? (
+                    <span className="ml-2 inline-block px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">Correct</span>
+                  ) : (
+                    <span className="ml-2 inline-block px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700">Check count</span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* RESP RATE */}
+          <div className="p-5 bg-white rounded-2xl shadow-sm border border-gray-100">
+            <label htmlFor="rr" className="block text-sm font-medium mb-2">
+              Respiratory rate (breaths/min)
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                id="rr"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="e.g., 44"
+                value={userRR}
+                onChange={(e) => setUserRR(e.target.value.replace(/[^0-9]/g, ""))}
+                className="w-40 px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {checked && (
+                <div className="text-sm">
+                  <span className="text-gray-500">Actual:</span>{" "}
+                  <span className="font-semibold">{truth.rr ?? "—"}</span>{" "}
+                  {rrCorrect ? (
+                    <span className="ml-2 inline-block px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">Correct</span>
+                  ) : (
+                    <span className="ml-2 inline-block px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700">Check count</span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 flex items-center gap-3">
+          <button
+            onClick={handleCheck}
+            className="px-4 py-2 rounded-2xl bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm"
+          >
+            Check
+          </button>
+          <button
+            onClick={() => {
+              setUserHR("");
+              setUserRR("");
+              setChecked(false);
+            }}
+            className="px-3 py-2 rounded-2xl bg-gray-200 hover:bg-gray-300"
+          >
+            Clear inputs
+          </button>
+        </div>
+
+        <section className="mt-8 text-sm text-gray-600">
+          <details className="select-none">
+            <summary className="cursor-pointer">Help & notes</summary>
+            <ul className="list-disc ml-6 mt-2 space-y-1">
+              <li>Click <strong>New sound</strong> for a fresh random clip. It loops automatically.</li>
+              <li>Use headphones if possible to better distinguish breaths vs heart tones.</li>
+              <li>Your answers must match exactly to be marked correct.</li>
+              <li>If audio doesn’t start, click the ▶/⏸ button (autoplay can be blocked by browsers).</li>
+            </ul>
+          </details>
+        </section>
+      </div>
+    </div>
+  );
+}
