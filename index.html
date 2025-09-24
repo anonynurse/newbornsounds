@@ -1,227 +1,218 @@
-import React, { useMemo, useRef, useState } from "react";
-
-/**
- * Newborn HR/RR Practice
- * ------------------------------------------------------
- * How to use:
- * 1) Create a folder `public/sounds/` in your project and place these files in it:
- *    - Breath(38)Heart(126).mp3
- *    - Breath(40)Heart(120).mp3
- *    - Breath(42)Heart(144).mp3
- *    - Breath(46)Heart(130).mp3
- *    - Breath(48)Heart(138).mp3
- *    - Breath(50)Heart(144).mp3
- *    - Breath(52)Heart(146).mp3
- *    - Breath(52)Heart(150).mp3
- * 2) Drop this component into a React app (Vite/Next/CRA). It expects Tailwind but also works plain.
- * 3) Click "New sound" to randomly load and loop one clip. The filename is never shown.
- * 4) Count HR/RR, type your answers, then click "Check" to reveal the ground truth beside each input.
- */
-
-const FILES = [
-  "Breath(38)Heart(126).mp3",
-  "Breath(40)Heart(120).mp3",
-  "Breath(42)Heart(144).mp3",
-  "Breath(46)Heart(130).mp3",
-  "Breath(48)Heart(138).mp3",
-  "Breath(50)Heart(144).mp3",
-  "Breath(52)Heart(146).mp3",
-  "Breath(52)Heart(150).mp3",
-];
-
-function parseRates(filename) {
-  // Expect e.g., "Breath(38)Heart(126).mp3"
-  const m = filename.match(/Breath\((\d+)\)Heart\((\d+)\)\.mp3$/i);
-  if (!m) return { rr: null, hr: null };
-  const rr = parseInt(m[1], 10);
-  const hr = parseInt(m[2], 10);
-  return { rr, hr };
-}
-
-export default function NewbornHRRRPractice() {
-  const audioRef = useRef(null);
-  const [currentFile, setCurrentFile] = useState(null); // string
-  const [truth, setTruth] = useState({ rr: null, hr: null });
-  const [userHR, setUserHR] = useState("");
-  const [userRR, setUserRR] = useState("");
-  const [checked, setChecked] = useState(false);
-  const [statusMsg, setStatusMsg] = useState("");
-
-  const src = useMemo(() => (currentFile ? `/sounds/${currentFile}` : null), [currentFile]);
-
-  const handleNewSound = async () => {
-    // pick a new random file
-    const fname = FILES[Math.floor(Math.random() * FILES.length)];
-    const { rr, hr } = parseRates(fname);
-    setCurrentFile(fname);
-    setTruth({ rr, hr });
-    setChecked(false);
-    setUserHR("");
-    setUserRR("");
-    setStatusMsg("");
-
-    // After state updates flush, try to play
-    setTimeout(async () => {
-      const el = audioRef.current;
-      if (el) {
-        try {
-          el.currentTime = 0;
-          el.loop = true;
-          await el.play();
-        } catch (e) {
-          setStatusMsg("Tap the ▶ Play button to start audio.");
-        }
-      }
-    }, 0);
-  };
-
-  const handleCheck = () => {
-    if (!currentFile) {
-      setStatusMsg("Click ‘New sound’ first.");
-      return;
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Newborn HR/RR Practice</title>
+  <style>
+    :root {
+      --bg: #f7f7fb;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --primary-700: #1d4ed8;
+      --success: #059669;
+      --danger: #b91c1c;
+      --ring: rgba(37, 99, 235, 0.35);
+      --border: #e5e7eb;
     }
-    setChecked(true);
-  };
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; background: var(--bg); color: var(--text); }
+    .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+    header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+    h1 { font-size: 1.4rem; margin: 0; }
+    .row { display: flex; gap: 10px; align-items: center; }
+    button { border: 0; background: var(--primary); color: #fff; padding: 10px 14px; border-radius: 14px; cursor: pointer; transition: 120ms ease; box-shadow: 0 1px 0 rgba(0,0,0,0.05); }
+    button:hover { background: var(--primary-700); }
+    button.secondary { background: #e5e7eb; color: #111; }
+    button.secondary:hover { background: #d1d5db; }
+    .status { margin: 8px 0 16px; font-size: 0.9rem; color: #92400e; background: #fffbeb; border: 1px solid #fef3c7; padding: 8px 10px; border-radius: 10px; display: none; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 12px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; box-shadow: 0 1px 0 rgba(0,0,0,.02); }
+    label { display: block; font-size: 0.95rem; margin-bottom: 8px; }
+    .input-line { display: flex; align-items: center; gap: 10px; }
+    input[type="text"], input[type="number"] { width: 120px; padding: 10px 12px; border-radius: 12px; border: 1px solid #d1d5db; outline: none; font-size: 1rem; }
+    input:focus { box-shadow: 0 0 0 4px var(--ring); border-color: var(--primary); }
+    .actual { font-size: 0.9rem; color: var(--muted); }
+    .badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 999px; margin-left: 6px; display: inline-block; }
+    .ok { background: #d1fae5; color: var(--success); }
+    .no { background: #fee2e2; color: var(--danger); }
+    .actions { margin-top: 16px; display: flex; gap: 10px; align-items: center; }
+    details { margin-top: 18px; color: var(--muted); }
+    summary { cursor: pointer; }
+    /* Hide the native audio controls/filename */
+    audio { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Newborn Heart &amp; Respiratory Rate Practice</h1>
+      <div class="row">
+        <button id="new-sound">New sound</button>
+        <button id="play-pause" class="secondary" aria-pressed="false" title="Play/Pause">▶/⏸</button>
+      </div>
+    </header>
 
-  const equals = (a, b) => {
-    if (a === "" || a === null || a === undefined) return false;
-    const ai = parseInt(a, 10);
-    return Number.isFinite(ai) && ai === b;
-  };
+    <div id="status" class="status" role="status" aria-live="polite"></div>
 
-  const hrCorrect = checked && equals(userHR, truth.hr);
-  const rrCorrect = checked && equals(userRR, truth.rr);
+    <audio id="audio" preload="auto"></audio>
 
-  return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      <div className="max-w-3xl mx-auto p-6">
-        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <h1 className="text-2xl font-semibold">Newborn Heart & Respiratory Rate Practice</h1>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleNewSound}
-              className="px-4 py-2 rounded-2xl bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
-            >
-              New sound
-            </button>
-            {/* Simple custom controls: we keep native controls hidden to avoid filename exposure */}
-            <button
-              onClick={() => {
-                const el = audioRef.current;
-                if (!el) return;
-                if (el.paused) {
-                  el.play().catch(() => setStatusMsg("Autoplay blocked. Click Play again."));
-                } else {
-                  el.pause();
-                }
-              }}
-              className="px-3 py-2 rounded-2xl bg-gray-200 hover:bg-gray-300"
-            >
-              ▶/⏸
-            </button>
-          </div>
-        </header>
-
-        {statusMsg && (
-          <div className="mb-4 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
-            {statusMsg}
-          </div>
-        )}
-
-        {/* Hidden audio element (no controls -> filename never shown) */}
-        <audio ref={audioRef} src={src ?? undefined} preload="auto" />
-
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* HEART RATE */}
-          <div className="p-5 bg-white rounded-2xl shadow-sm border border-gray-100">
-            <label htmlFor="hr" className="block text-sm font-medium mb-2">
-              Heart rate (beats/min)
-            </label>
-            <div className="flex items-center gap-3">
-              <input
-                id="hr"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                placeholder="e.g., 140"
-                value={userHR}
-                onChange={(e) => setUserHR(e.target.value.replace(/[^0-9]/g, ""))}
-                className="w-40 px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              {checked && (
-                <div className="text-sm">
-                  <span className="text-gray-500">Actual:</span>{" "}
-                  <span className="font-semibold">{truth.hr ?? "—"}</span>{" "}
-                  {hrCorrect ? (
-                    <span className="ml-2 inline-block px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">Correct</span>
-                  ) : (
-                    <span className="ml-2 inline-block px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700">Check count</span>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* RESP RATE */}
-          <div className="p-5 bg-white rounded-2xl shadow-sm border border-gray-100">
-            <label htmlFor="rr" className="block text-sm font-medium mb-2">
-              Respiratory rate (breaths/min)
-            </label>
-            <div className="flex items-center gap-3">
-              <input
-                id="rr"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                placeholder="e.g., 44"
-                value={userRR}
-                onChange={(e) => setUserRR(e.target.value.replace(/[^0-9]/g, ""))}
-                className="w-40 px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              {checked && (
-                <div className="text-sm">
-                  <span className="text-gray-500">Actual:</span>{" "}
-                  <span className="font-semibold">{truth.rr ?? "—"}</span>{" "}
-                  {rrCorrect ? (
-                    <span className="ml-2 inline-block px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">Correct</span>
-                  ) : (
-                    <span className="ml-2 inline-block px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700">Check count</span>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
+    <div class="grid">
+      <div class="card">
+        <label for="hr">Heart rate (beats/min)</label>
+        <div class="input-line">
+          <input id="hr" inputmode="numeric" pattern="[0-9]*" placeholder="e.g., 140" />
+          <div id="hr-actual" class="actual" aria-live="polite"></div>
         </div>
+      </div>
 
-        <div className="mt-6 flex items-center gap-3">
-          <button
-            onClick={handleCheck}
-            className="px-4 py-2 rounded-2xl bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm"
-          >
-            Check
-          </button>
-          <button
-            onClick={() => {
-              setUserHR("");
-              setUserRR("");
-              setChecked(false);
-            }}
-            className="px-3 py-2 rounded-2xl bg-gray-200 hover:bg-gray-300"
-          >
-            Clear inputs
-          </button>
+      <div class="card">
+        <label for="rr">Respiratory rate (breaths/min)</label>
+        <div class="input-line">
+          <input id="rr" inputmode="numeric" pattern="[0-9]*" placeholder="e.g., 44" />
+          <div id="rr-actual" class="actual" aria-live="polite"></div>
         </div>
-
-        <section className="mt-8 text-sm text-gray-600">
-          <details className="select-none">
-            <summary className="cursor-pointer">Help & notes</summary>
-            <ul className="list-disc ml-6 mt-2 space-y-1">
-              <li>Click <strong>New sound</strong> for a fresh random clip. It loops automatically.</li>
-              <li>Use headphones if possible to better distinguish breaths vs heart tones.</li>
-              <li>Your answers must match exactly to be marked correct.</li>
-              <li>If audio doesn’t start, click the ▶/⏸ button (autoplay can be blocked by browsers).</li>
-            </ul>
-          </details>
-        </section>
       </div>
     </div>
-  );
-}
+
+    <div class="actions">
+      <button id="check" title="Reveal actual values and correctness">Check</button>
+      <button id="clear" class="secondary" title="Clear inputs and feedback">Clear inputs</button>
+    </div>
+
+    <details>
+      <summary>Help &amp; notes</summary>
+      <ul>
+        <li>Click <strong>New sound</strong> for a random clip. It loops automatically.</li>
+        <li>If audio doesn’t start, click <strong>▶/⏸</strong> (browsers often block autoplay until a user gesture).</li>
+        <li>Type your counts, then press <strong>Check</strong> to reveal the actual HR/RR next to each box.</li>
+        <li>Exact match is required to mark as correct (no tolerance right now).</li>
+      </ul>
+    </details>
+  </div>
+
+  <script>
+    // Put these MP3 files in the SAME DIRECTORY as index.html
+    const FILES = [
+      "Breath(38)Heart(126).mp3",
+      "Breath(40)Heart(120).mp3",
+      "Breath(42)Heart(144).mp3",
+      "Breath(46)Heart(130).mp3",
+      "Breath(48)Heart(138).mp3",
+      "Breath(50)Heart(144).mp3",
+      "Breath(52)Heart(146).mp3",
+      "Breath(52)Heart(150).mp3",
+    ];
+
+    const audioEl = document.getElementById('audio');
+    const btnNew = document.getElementById('new-sound');
+    const btnPlayPause = document.getElementById('play-pause');
+    const btnCheck = document.getElementById('check');
+    const btnClear = document.getElementById('clear');
+    const statusBox = document.getElementById('status');
+
+    const inputHR = document.getElementById('hr');
+    const inputRR = document.getElementById('rr');
+    const hrActual = document.getElementById('hr-actual');
+    const rrActual = document.getElementById('rr-actual');
+
+    let currentFile = null;
+    let truth = { hr: null, rr: null };
+
+    // numeric-only
+    function digitsOnly(e) {
+      const v = e.target.value.replace(/[^0-9]/g, '');
+      if (v !== e.target.value) e.target.value = v;
+    }
+    inputHR.addEventListener('input', digitsOnly);
+    inputRR.addEventListener('input', digitsOnly);
+
+    function parseRates(filename) {
+      const m = filename.match(/Breath\\((\\d+)\\)Heart\\((\\d+)\\)\\.mp3$/i);
+      if (!m) return { rr: null, hr: null };
+      return { rr: parseInt(m[1], 10), hr: parseInt(m[2], 10) };
+    }
+
+    function pickRandomFile(exclude) {
+      if (FILES.length === 0) return null;
+      if (FILES.length === 1) return FILES[0];
+      let f;
+      do { f = FILES[Math.floor(Math.random() * FILES.length)]; } while (f === exclude);
+      return f;
+    }
+
+    function setStatus(msg) {
+      if (!msg) { statusBox.style.display = 'none'; statusBox.textContent = ''; return; }
+      statusBox.textContent = msg;
+      statusBox.style.display = 'block';
+    }
+
+    async function loadAndPlay(file) {
+      currentFile = file;
+      truth = parseRates(file);
+      hrActual.textContent = '';
+      rrActual.textContent = '';
+      inputHR.value = '';
+      inputRR.value = '';
+
+      audioEl.loop = true;
+      audioEl.src = file;
+      try {
+        await audioEl.play();
+        setStatus('');
+        btnPlayPause.setAttribute('aria-pressed', 'true');
+      } catch (e) {
+        setStatus('Audio is ready. Click ▶/⏸ to start (autoplay was blocked).');
+        btnPlayPause.setAttribute('aria-pressed', 'false');
+      }
+    }
+
+    btnNew.addEventListener('click', () => {
+      const next = pickRandomFile(currentFile);
+      if (!next) return;
+      loadAndPlay(next);
+    });
+
+    btnPlayPause.addEventListener('click', async () => {
+      if (!audioEl.src) {
+        const next = pickRandomFile(null);
+        if (!next) return;
+        await loadAndPlay(next);
+        return;
+      }
+      if (audioEl.paused) {
+        try { await audioEl.play(); setStatus(''); btnPlayPause.setAttribute('aria-pressed', 'true'); }
+        catch { setStatus('Click ▶/⏸ again if needed.'); }
+      } else {
+        audioEl.pause();
+        btnPlayPause.setAttribute('aria-pressed', 'false');
+      }
+    });
+
+    btnCheck.addEventListener('click', () => {
+      if (!currentFile) { setStatus('Click “New sound” first.'); return; }
+      const hrVal = parseInt(inputHR.value, 10);
+      const rrVal = parseInt(inputRR.value, 10);
+
+      hrActual.innerHTML = `Actual: <strong>${truth.hr ?? '—'}</strong>` +
+        (Number.isFinite(hrVal) && hrVal === truth.hr
+          ? ' <span class="badge ok">Correct</span>'
+          : ' <span class="badge no">Check count</span>');
+
+      rrActual.innerHTML = `Actual: <strong>${truth.rr ?? '—'}</strong>` +
+        (Number.isFinite(rrVal) && rrVal === truth.rr
+          ? ' <span class="badge ok">Correct</span>'
+          : ' <span class="badge no">Check count</span>');
+    });
+
+    btnClear.addEventListener('click', () => {
+      inputHR.value = '';
+      inputRR.value = '';
+      hrActual.textContent = '';
+      rrActual.textContent = '';
+    });
+  </script>
+</body>
+</html>
