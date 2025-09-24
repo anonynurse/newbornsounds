@@ -15,8 +15,14 @@
     button { border: 0; padding: 10px 14px; border-radius: 12px; cursor: pointer; }
     button.primary { background: #2563eb; color: #fff; }
     button.primary:hover { background: #1d4ed8; }
-    button.secondary { background: #e5e7eb; color: #111; }
-    button.secondary:hover { background: #d1d5db; }
+
+    /* Round icon button for play/pause */
+    .icon-btn {
+      background: #e5e7eb; color: #111; display: inline-flex; align-items: center; justify-content: center;
+      width: 44px; height: 44px; border-radius: 999px; padding: 0;
+    }
+    .icon-btn:hover { background: #d1d5db; }
+    .icon { width: 22px; height: 22px; display: block; }
 
     .status { margin: 10px 0; padding: 8px 10px; border-radius: 8px; font-size: 0.9rem; display: none; background: #fffbeb; border: 1px solid #fef3c7; color: #92400e; }
 
@@ -62,7 +68,8 @@
       <h1>Newborn HR/RR Practice</h1>
       <div class="header-btns">
         <button id="new-sound" class="primary">New sound</button>
-        <button id="play-pause" class="secondary">▶/⏸</button>
+        <!-- SVG Play/Pause -->
+        <button id="play-pause" class="icon-btn" aria-label="Play" title="Play" data-state="paused"></button>
       </div>
     </header>
 
@@ -88,11 +95,17 @@
 
     <div class="bottom-actions" style="margin-top:16px;">
       <button id="check" class="primary">Check</button>
-      <button id="clear" class="secondary">Clear</button>
+      <button id="clear" class="icon-btn" aria-label="Clear" title="Clear" style="width:auto; height:auto; border-radius:12px; padding:10px 14px;">Clear</button>
     </div>
   </div>
 
 <script>
+/* ------ SVG icons (consistent on Android/iOS/Desktop) ------ */
+const ICONS = {
+  play:  '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>',
+  pause: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="currentColor"/></svg>'
+};
+
 /* ------ App logic ------ */
 const FILES = [
   "Breath(38)Heart(126).mp3","Breath(40)Heart(120).mp3","Breath(42)Heart(144).mp3",
@@ -102,6 +115,7 @@ const FILES = [
 
 const audioEl = document.getElementById('audio');
 const statusBox = document.getElementById('status');
+const playBtn = document.getElementById('play-pause');
 let currentFile = null;
 let truth = {hr:null, rr:null};
 
@@ -114,16 +128,33 @@ async function loadAndPlay(file){
   currentFile = file; truth = parseRates(file);
   hr.value=''; rr.value=''; hrA.textContent=''; rrA.textContent='';
   audioEl.loop = true; audioEl.src = file;
-  try { await audioEl.play(); setStatus(''); } catch { setStatus('Audio ready. Click ▶/⏸ to start.'); }
+  try { await audioEl.play(); setStatus(''); setPlayState(true); } catch { setStatus('Audio ready. Press Play.'); setPlayState(false); }
 }
 
+/* Inputs & UI refs */
 const hr = document.getElementById('hr');
 const rr = document.getElementById('rr');
 const hrA = document.getElementById('hr-actual');
 const rrA = document.getElementById('rr-actual');
 
+/* Initialize play button icon */
+setPlayState(false);
+
 document.getElementById('new-sound').onclick = () => loadAndPlay(FILES[Math.floor(Math.random()*FILES.length)]);
-document.getElementById('play-pause').onclick = () => { if (!audioEl.src) return; audioEl.paused ? audioEl.play() : audioEl.pause(); };
+
+playBtn.onclick = async () => {
+  if (!audioEl.src) {
+    // If no file loaded yet, act like "New sound"
+    await loadAndPlay(FILES[Math.floor(Math.random()*FILES.length)]);
+    return;
+    }
+  if (audioEl.paused) {
+    try { await audioEl.play(); setStatus(''); setPlayState(true); } catch { setStatus('Press Play again if needed.'); }
+  } else {
+    audioEl.pause(); setPlayState(false);
+  }
+};
+
 document.getElementById('clear').onclick = () => { hr.value=''; rr.value=''; hrA.textContent=''; rrA.textContent=''; };
 
 document.getElementById('check').onclick = () => {
@@ -134,7 +165,6 @@ document.getElementById('check').onclick = () => {
   const hrExact = Number.isFinite(hrVal) && hrVal === truth.hr;
   const rrExact = Number.isFinite(rrVal) && rrVal === truth.rr;
 
-  // badges
   hrA.innerHTML =
     `<span>Actual: <strong>${truth.hr}</strong></span> ` +
     (hrExact ? '<span class="badge ok">Perfect</span>' :
@@ -147,17 +177,31 @@ document.getElementById('check').onclick = () => {
      rrOK ? '<span class="badge ok">Correct (±5)</span>' :
             '<span class="badge no">Check count</span>');
 
-  // Confetti only on Perfect; choose origin based on layout (stacked vs side-by-side)
+  // Mobile vs desktop confetti origin
   const stacked = cardsStacked();
   if (hrExact) confettiFromElement(hr, {fromTop: !stacked});
   if (rrExact) confettiFromElement(rr, {fromTop: !stacked, sibling: hrExact ? hr : null});
 };
 
+/* ------ Play/Pause state visuals ------ */
+function setPlayState(isPlaying) {
+  if (isPlaying) {
+    playBtn.dataset.state = 'playing';
+    playBtn.setAttribute('aria-label', 'Pause');
+    playBtn.setAttribute('title', 'Pause');
+    playBtn.innerHTML = ICONS.pause;
+  } else {
+    playBtn.dataset.state = 'paused';
+    playBtn.setAttribute('aria-label', 'Play');
+    playBtn.setAttribute('title', 'Play');
+    playBtn.innerHTML = ICONS.play;
+  }
+}
+
 /* ------ Layout helper: are the cards stacked? ------ */
 function cardsStacked() {
   const hrRect = document.getElementById('card-hr').getBoundingClientRect();
   const rrRect = document.getElementById('card-rr').getBoundingClientRect();
-  // Stacked if RR starts below HR (no horizontal overlap)
   return rrRect.top >= hrRect.bottom - 1 || hrRect.top >= rrRect.bottom - 1;
 }
 
@@ -176,21 +220,17 @@ let lastT = 0;
  * Fire confetti aligned to an element.
  * Options:
  * - fromTop: if true, spawn at top (y=0) aligned horizontally; if false, spawn at element's bottom edge.
- * - sibling: optional second element; if both share (nearly) same x-center, offset left/right a bit so bursts look distinct on mobile.
+ * - sibling: optional second element; if both share (nearly) same x-center, offset a bit so bursts are distinct on mobile.
  */
 function confettiFromElement(el, {fromTop=true, sibling=null} = {}) {
   const rect = el.getBoundingClientRect();
   let x = rect.left + rect.width/2;
   let y = fromTop ? 0 : (rect.top + rect.height);
 
-  // If sibling provided and x-centers are very close, offset left/right
   if (sibling) {
     const sRect = sibling.getBoundingClientRect();
     const sx = sRect.left + sRect.width/2;
-    if (Math.abs(sx - x) < 24) {
-      // push current one slightly right, sibling will be left by its own call
-      x += 32;
-    }
+    if (Math.abs(sx - x) < 24) x += 32; // small horizontal offset so two bursts don't overlap
   }
 
   const colors = ['#ef4444','#f59e0b','#10b981','#3b82f6','#a855f7','#ec4899','#22d3ee','#84cc16'];
