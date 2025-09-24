@@ -22,20 +22,16 @@
       border-radius: 12px;
       border: 1px solid #e5e7eb;
 
-      /* Center content */
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       text-align: center;
-
-      /* Give cards height so vertical centering is visible */
-      /*min-height: 180px;*/
     }
     .card .input-line {
       display: flex;
       align-items: center;
-      justify-content: center; /* horizontally center input + result */
+      justify-content: center;
       gap: 10px;
     }
     .card label {
@@ -131,8 +127,15 @@ document.getElementById('check').onclick = () => {
   const hrExact = Number.isFinite(hrVal) && hrVal === truth.hr;
   const rrExact = Number.isFinite(rrVal) && rrVal === truth.rr;
 
-  hrA.innerHTML = `<span>Actual: <strong>${truth.hr}</strong></span>` + (hrOK ? ' <span class="badge ok">Correct (±10)</span>' : ' <span class="badge no">Check count</span>');
-  rrA.innerHTML = `<span>Actual: <strong>${truth.rr}</strong></span>` + (rrOK ? ' <span class="badge ok">Correct (±5)</span>' : ' <span class="badge no">Check count</span>');
+  hrA.innerHTML = `<span>Actual: <strong>${truth.hr}</strong></span>` +
+    (hrExact ? ' <span class="badge ok">Perfect</span>'
+      : hrOK ? ' <span class="badge ok">Correct (±10)</span>'
+      : ' <span class="badge no">Check count</span>');
+
+  rrA.innerHTML = `<span>Actual: <strong>${truth.rr}</strong></span>` +
+    (rrExact ? ' <span class="badge ok">Perfect</span>'
+      : rrOK ? ' <span class="badge ok">Correct (±5)</span>'
+      : ' <span class="badge no">Check count</span>');
 
   if (hrExact) confettiTopAligned(hr);
   if (rrExact) confettiTopAligned(rr);
@@ -152,7 +155,7 @@ let lastT = 0;
 function confettiTopAligned(el){
   const rect = el.getBoundingClientRect();
   const x = rect.left + rect.width/2;
-  const y = 0; // top of viewport
+  const y = 0;
 
   const colors = ['#ef4444','#f59e0b','#10b981','#3b82f6','#a855f7','#ec4899','#22d3ee','#84cc16'];
   const N = 140;
