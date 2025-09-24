@@ -121,22 +121,27 @@ document.getElementById('clear').onclick = () => { hr.value=''; rr.value=''; hrA
 
 document.getElementById('check').onclick = () => {
   if (!currentFile) { setStatus('Click “New sound” first.'); return; }
-  const hrVal = parseInt(hr.value,10), rrVal = parseInt(rr.value,10);
+  const hrVal = parseInt(hr.value.trim(),10), rrVal = parseInt(rr.value.trim(),10);
   const hrOK = Number.isFinite(hrVal) && Math.abs(hrVal - truth.hr) <= 10;
   const rrOK = Number.isFinite(rrVal) && Math.abs(rrVal - truth.rr) <= 5;
   const hrExact = Number.isFinite(hrVal) && hrVal === truth.hr;
   const rrExact = Number.isFinite(rrVal) && rrVal === truth.rr;
 
-  hrA.innerHTML = `<span>Actual: <strong>${truth.hr}</strong></span>` +
-    (hrExact ? ' <span class="badge ok">Perfect</span>'
-      : hrOK ? ' <span class="badge ok">Correct (±10)</span>'
-      : ' <span class="badge no">Check count</span>');
+  // Build badges explicitly (exact -> Perfect; else within tolerance -> Correct; else Check count)
+  let hrBadge = '';
+  if (hrExact) hrBadge = '<span class="badge ok">Perfect</span>';
+  else if (hrOK) hrBadge = '<span class="badge ok">Correct (±10)</span>';
+  else hrBadge = '<span class="badge no">Check count</span>';
 
-  rrA.innerHTML = `<span>Actual: <strong>${truth.rr}</strong></span>` +
-    (rrExact ? ' <span class="badge ok">Perfect</span>'
-      : rrOK ? ' <span class="badge ok">Correct (±5)</span>'
-      : ' <span class="badge no">Check count</span>');
+  let rrBadge = '';
+  if (rrExact) rrBadge = '<span class="badge ok">Perfect</span>';
+  else if (rrOK) rrBadge = '<span class="badge ok">Correct (±5)</span>';
+  else rrBadge = '<span class="badge no">Check count</span>';
 
+  hrA.innerHTML = `<span>Actual: <strong>${truth.hr}</strong></span> ${hrBadge}`;
+  rrA.innerHTML = `<span>Actual: <strong>${truth.rr}</strong></span> ${rrBadge}`;
+
+  // Confetti only on Perfect (exact match)
   if (hrExact) confettiTopAligned(hr);
   if (rrExact) confettiTopAligned(rr);
 };
@@ -155,7 +160,7 @@ let lastT = 0;
 function confettiTopAligned(el){
   const rect = el.getBoundingClientRect();
   const x = rect.left + rect.width/2;
-  const y = 0;
+  const y = 0; // top of viewport
 
   const colors = ['#ef4444','#f59e0b','#10b981','#3b82f6','#a855f7','#ec4899','#22d3ee','#84cc16'];
   const N = 140;
@@ -163,7 +168,7 @@ function confettiTopAligned(el){
   const now = performance.now();
 
   for (let i=0;i<N;i++){
-    const angle = Math.PI/2 + (Math.random()-0.5)*2.2;
+    const angle = Math.PI/2 + (Math.random()-0.5)*2.2; // mostly downward, wide spread
     const speed = (0.55 + Math.random()*0.9) * (H/1.6);
     particles.push({
       x, y,
