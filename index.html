@@ -5,46 +5,53 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Newborn HR/RR Practice</title>
   <style>
-    body { font-family: system-ui, sans-serif; background: #f7f7fb; color: #111827; margin: 0; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; background: #f7f7fb; color: #111827; margin: 0; }
     .container { max-width: 900px; margin: 0 auto; padding: 24px; }
-    header { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+
+    header { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; margin-bottom: 18px; gap: 10px; }
     h1 { font-size: 1.4rem; margin: 0; }
+    .header-btns { display: flex; gap: 10px; align-items: center; }
+
     button { border: 0; padding: 10px 14px; border-radius: 12px; cursor: pointer; }
     button.primary { background: #2563eb; color: #fff; }
     button.primary:hover { background: #1d4ed8; }
-    button.secondary { background: #e5e7eb; }
+    button.secondary { background: #e5e7eb; color: #111; }
     button.secondary:hover { background: #d1d5db; }
+
     .status { margin: 10px 0; padding: 8px 10px; border-radius: 8px; font-size: 0.9rem; display: none; background: #fffbeb; border: 1px solid #fef3c7; color: #92400e; }
+
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
     .card {
-      background: #fff;
-      padding: 16px;
-      border-radius: 12px;
-      border: 1px solid #e5e7eb;
+      background: #fff; padding: 16px; border-radius: 12px; border: 1px solid #e5e7eb;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+    }
+    .card .input-line { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+    .card label { width: 100%; text-align: center; margin-bottom: 8px; }
 
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-    }
-    .card .input-line {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-    .card label {
-      width: 100%;
-      text-align: center;
-      margin-bottom: 8px;
-    }
-    input { width: 120px; padding: 8px 10px; border-radius: 10px; border: 1px solid #d1d5db; font-size: 1rem; }
+    input { width: 140px; padding: 10px 12px; border-radius: 10px; border: 1px solid #d1d5db; font-size: 1rem; }
+
     .badge { font-size: 0.75rem; padding: 2px 6px; border-radius: 999px; margin-left: 6px; }
     .ok { background: #d1fae5; color: #065f46; }
     .no { background: #fee2e2; color: #991b1b; }
+
     audio { display: none; }
     #confetti { position:fixed; inset:0; pointer-events:none; z-index:9999; }
+
+    /* --- Mobile tweaks --- */
+    @media (max-width: 640px) {
+      header { justify-content: center; }
+      header h1 { width: 100%; text-align: center; }
+      .header-btns { width: 100%; justify-content: center; }
+
+      .bottom-actions { text-align: center; }
+      .bottom-actions > * { display: inline-block; margin: 4px 6px; }
+
+      /* Force badges onto their own line under the "Actual:" text */
+      #hr-actual .badge, #rr-actual .badge { display: block; margin-left: 0; margin-top: 4px; }
+
+      /* Slightly larger inputs for thumbs */
+      input { width: 160px; }
+    }
   </style>
 </head>
 <body>
@@ -53,7 +60,7 @@
   <div class="container">
     <header>
       <h1>Newborn HR/RR Practice</h1>
-      <div>
+      <div class="header-btns">
         <button id="new-sound" class="primary">New sound</button>
         <button id="play-pause" class="secondary">▶/⏸</button>
       </div>
@@ -63,25 +70,25 @@
     <audio id="audio" preload="auto"></audio>
 
     <div class="grid">
-      <div class="card">
+      <div class="card" id="card-hr">
         <label for="hr">Heart rate (beats/min)</label>
         <div class="input-line">
-          <input id="hr">
+          <input id="hr" inputmode="numeric" pattern="[0-9]*">
           <div id="hr-actual"></div>
         </div>
       </div>
-      <div class="card">
+      <div class="card" id="card-rr">
         <label for="rr">Respiratory rate (breaths/min)</label>
         <div class="input-line">
-          <input id="rr">
+          <input id="rr" inputmode="numeric" pattern="[0-9]*">
           <div id="rr-actual"></div>
         </div>
       </div>
     </div>
 
-    <div style="margin-top:16px;">
+    <div class="bottom-actions" style="margin-top:16px;">
       <button id="check" class="primary">Check</button>
-      <button id="clear" class="secondary">Clear inputs</button>
+      <button id="clear" class="secondary">Clear</button>
     </div>
   </div>
 
@@ -127,26 +134,34 @@ document.getElementById('check').onclick = () => {
   const hrExact = Number.isFinite(hrVal) && hrVal === truth.hr;
   const rrExact = Number.isFinite(rrVal) && rrVal === truth.rr;
 
-  // Build badges explicitly (exact -> Perfect; else within tolerance -> Correct; else Check count)
-  let hrBadge = '';
-  if (hrExact) hrBadge = '<span class="badge ok">Perfect</span>';
-  else if (hrOK) hrBadge = '<span class="badge ok">Correct (±10)</span>';
-  else hrBadge = '<span class="badge no">Check count</span>';
+  // badges
+  hrA.innerHTML =
+    `<span>Actual: <strong>${truth.hr}</strong></span> ` +
+    (hrExact ? '<span class="badge ok">Perfect</span>' :
+     hrOK ? '<span class="badge ok">Correct (±10)</span>' :
+            '<span class="badge no">Check count</span>');
 
-  let rrBadge = '';
-  if (rrExact) rrBadge = '<span class="badge ok">Perfect</span>';
-  else if (rrOK) rrBadge = '<span class="badge ok">Correct (±5)</span>';
-  else rrBadge = '<span class="badge no">Check count</span>';
+  rrA.innerHTML =
+    `<span>Actual: <strong>${truth.rr}</strong></span> ` +
+    (rrExact ? '<span class="badge ok">Perfect</span>' :
+     rrOK ? '<span class="badge ok">Correct (±5)</span>' :
+            '<span class="badge no">Check count</span>');
 
-  hrA.innerHTML = `<span>Actual: <strong>${truth.hr}</strong></span> ${hrBadge}`;
-  rrA.innerHTML = `<span>Actual: <strong>${truth.rr}</strong></span> ${rrBadge}`;
-
-  // Confetti only on Perfect (exact match)
-  if (hrExact) confettiTopAligned(hr);
-  if (rrExact) confettiTopAligned(rr);
+  // Confetti only on Perfect; choose origin based on layout (stacked vs side-by-side)
+  const stacked = cardsStacked();
+  if (hrExact) confettiFromElement(hr, {fromTop: !stacked});
+  if (rrExact) confettiFromElement(rr, {fromTop: !stacked, sibling: hrExact ? hr : null});
 };
 
-/* ------ Confetti engine ------ */
+/* ------ Layout helper: are the cards stacked? ------ */
+function cardsStacked() {
+  const hrRect = document.getElementById('card-hr').getBoundingClientRect();
+  const rrRect = document.getElementById('card-rr').getBoundingClientRect();
+  // Stacked if RR starts below HR (no horizontal overlap)
+  return rrRect.top >= hrRect.bottom - 1 || hrRect.top >= rrRect.bottom - 1;
+}
+
+/* ------ Confetti engine (supports simultaneous bursts) ------ */
 const canvas = document.getElementById('confetti');
 const ctx = canvas.getContext('2d', { alpha: true });
 let W=0, H=0;
@@ -157,10 +172,26 @@ let particles = [];
 let rafId = null;
 let lastT = 0;
 
-function confettiTopAligned(el){
+/**
+ * Fire confetti aligned to an element.
+ * Options:
+ * - fromTop: if true, spawn at top (y=0) aligned horizontally; if false, spawn at element's bottom edge.
+ * - sibling: optional second element; if both share (nearly) same x-center, offset left/right a bit so bursts look distinct on mobile.
+ */
+function confettiFromElement(el, {fromTop=true, sibling=null} = {}) {
   const rect = el.getBoundingClientRect();
-  const x = rect.left + rect.width/2;
-  const y = 0; // top of viewport
+  let x = rect.left + rect.width/2;
+  let y = fromTop ? 0 : (rect.top + rect.height);
+
+  // If sibling provided and x-centers are very close, offset left/right
+  if (sibling) {
+    const sRect = sibling.getBoundingClientRect();
+    const sx = sRect.left + sRect.width/2;
+    if (Math.abs(sx - x) < 24) {
+      // push current one slightly right, sibling will be left by its own call
+      x += 32;
+    }
+  }
 
   const colors = ['#ef4444','#f59e0b','#10b981','#3b82f6','#a855f7','#ec4899','#22d3ee','#84cc16'];
   const N = 140;
@@ -168,7 +199,7 @@ function confettiTopAligned(el){
   const now = performance.now();
 
   for (let i=0;i<N;i++){
-    const angle = Math.PI/2 + (Math.random()-0.5)*2.2; // mostly downward, wide spread
+    const angle = Math.PI/2 + (Math.random()-0.5)*2.2;  // downward, wide spread
     const speed = (0.55 + Math.random()*0.9) * (H/1.6);
     particles.push({
       x, y,
